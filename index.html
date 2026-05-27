@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Country Category Challenge</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d1117;
+      --card: #161b22;
+      --card2: #21262d;
+      --border: #30363d;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --accent: #58a6ff;
+      --green: #56d364;
+      --gold: #e3b341;
+      --red: #f78166;
+      --radius: 14px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 24px 16px 60px;
+    }
+
+    #app { width: 100%; max-width: 680px; }
+
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes pop {
+      0%   { transform: scale(0.92); opacity: 0; }
+      60%  { transform: scale(1.03); }
+      100% { transform: scale(1);    opacity: 1; }
+    }
+    @keyframes barGrow { from { width: 0; } }
+    .fadeUp  { animation: fadeUp .4s ease both; }
+    .pop     { animation: pop   .35s ease both; }
+
+    /* ── SHARED ── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px;
+    }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      gap: 8px; padding: 13px 22px; border-radius: 10px;
+      border: none; cursor: pointer; font-size: .95rem; font-weight: 600;
+      transition: opacity .15s, transform .15s;
+    }
+    .btn:hover  { opacity: .88; transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+    .btn-primary   { background: var(--accent); color: #000; width: 100%; }
+    .btn-secondary { background: var(--card2); color: var(--text); border: 1px solid var(--border); width: 100%; }
+    .btn-gold      { background: var(--gold);  color: #000; }
+
+    input[type="text"] {
+      width: 100%; padding: 12px 16px;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 10px; color: var(--text); font-size: 1rem;
+    }
+    input[type="text"]:focus { outline: none; border-color: var(--accent); }
+
+    .divider {
+      display: flex; align-items: center; gap: 12px;
+      color: var(--muted); font-size: .82rem; margin: 18px 0;
+    }
+    .divider::before, .divider::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
+    }
+
+    /* ── TOP BAR ── */
+    .top-bar {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 20px;
+    }
+    .top-back { background: none; border: none; color: var(--muted); cursor: pointer; font-size: .9rem; }
+    .top-back:hover { color: var(--text); }
+    .game-code-tag {
+      font-size: .82rem; color: var(--muted);
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 20px; padding: 4px 12px;
+    }
+    .game-code-tag span { color: var(--accent); font-family: monospace; font-weight: 700; }
+
+    /* ── WELCOME ── */
+    .welcome-hero { text-align: center; margin-bottom: 28px; }
+    .welcome-hero .globe { font-size: 3.5rem; margin-bottom: 10px; }
+    .welcome-hero h1 { font-size: 2.1rem; font-weight: 800; }
+    .welcome-hero p  { color: var(--muted); margin-top: 6px; }
+
+    .steps { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+    .step  { display: flex; align-items: flex-start; gap: 12px; }
+    .step-num {
+      width: 22px; height: 22px; border-radius: 50%;
+      background: var(--accent); color: #000;
+      font-size: .75rem; font-weight: 800;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .step-text { font-size: .88rem; color: var(--muted); line-height: 1.5; }
+
+    /* ── PROGRESS ── */
+    .progress-row {
+      display: flex; gap: 6px; margin-bottom: 22px;
+    }
+    .pdot {
+      flex: 1; height: 7px; border-radius: 4px;
+      background: var(--card2); transition: background .3s;
+    }
+    .pdot.done    { background: var(--green); }
+    .pdot.current { background: var(--accent); }
+
+    /* ── FLAG CARD ── */
+    .flag-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 30px 22px;
+      text-align: center; margin-bottom: 20px;
+    }
+    .flag-wrap {
+      display: inline-block; border-radius: 10px;
+      overflow: hidden; box-shadow: 0 8px 28px rgba(0,0,0,.5);
+      margin-bottom: 18px; width: 260px; height: 170px; background: var(--card2);
+    }
+    .flag-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .country-name  { font-size: 1.85rem; font-weight: 800; }
+    .round-label   { font-size: .82rem; color: var(--muted); margin-bottom: 10px; }
+    .prompt-text   { font-size: .88rem; color: var(--muted); text-align: center; margin-bottom: 16px; }
+
+    /* ── CATEGORY GRID ── */
+    .cat-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px; margin-bottom: 20px;
+    }
+    .cat-btn {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 14px 6px;
+      cursor: pointer; text-align: center;
+      transition: border-color .15s, background .15s, transform .15s, opacity .15s;
+      color: var(--text);
+    }
+    .cat-btn:not(.taken):hover {
+      border-color: var(--accent); background: var(--card2); transform: translateY(-2px);
+    }
+    .cat-btn.taken { opacity: .28; cursor: not-allowed; }
+    .cat-icon  { font-size: 1.55rem; }
+    .cat-label { font-size: .78rem; font-weight: 700; margin-top: 5px; }
+    .cat-sub   { font-size: .65rem; color: var(--muted); margin-top: 2px; }
+
+    /* ── SELECTIONS SO FAR ── */
+    .sel-bar {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 14px 18px;
+    }
+    .sel-bar-title { font-size: .78rem; color: var(--muted); margin-bottom: 10px; }
+    .sel-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .sel-chip {
+      background: var(--card2); border: 1px solid var(--border);
+      border-radius: 20px; padding: 4px 11px; font-size: .75rem;
+    }
+
+    /* ── RESULTS ── */
+    .score-hero { text-align: center; margin-bottom: 30px; }
+    .score-hero .label { font-size: .88rem; color: var(--muted); margin-bottom: 6px; }
+    .score-display { display: flex; align-items: center; justify-content: center; gap: 16px; }
+    .score-num { font-size: 4.5rem; font-weight: 900; color: var(--accent); line-height: 1; }
+    .grade-badge {
+      width: 52px; height: 52px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem; font-weight: 900; border: 2px solid;
+    }
+    .grade-S { background: rgba(86,211,100,.15); color: var(--green);  border-color: var(--green); }
+    .grade-A { background: rgba(86,211,100,.10); color: #7ee787;       border-color: #7ee787; }
+    .grade-B { background: rgba(88,166,255,.12); color: var(--accent); border-color: var(--accent); }
+    .grade-C { background: rgba(227,179,65,.12); color: var(--gold);   border-color: var(--gold); }
+    .grade-D { background: rgba(247,129,102,.12); color: var(--red);   border-color: var(--red); }
+    .score-hero .max { color: var(--muted); font-size: .88rem; margin-top: 4px; }
+    .total-bar-bg {
+      height: 10px; background: var(--card2); border-radius: 5px;
+      overflow: hidden; max-width: 320px; margin: 10px auto 0;
+    }
+    .total-bar-fill {
+      height: 100%; border-radius: 5px; background: var(--accent);
+      animation: barGrow 1.2s ease both;
+    }
+    .score-comment { font-size: .88rem; color: var(--muted); margin-top: 8px; }
+
+    /* Results grid */
+    .results-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 22px;
+    }
+    .res-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 14px;
+    }
+    .res-head { display: flex; align-items: center; gap: 7px; margin-bottom: 5px; }
+    .res-icon  { font-size: 1.1rem; }
+    .res-title { font-size: .88rem; font-weight: 700; }
+    .res-country { font-size: .75rem; color: var(--muted); margin-bottom: 8px; }
+    .bar-bg { height: 7px; background: var(--bg); border-radius: 4px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 4px; animation: barGrow 1s ease both; }
+    .res-score { font-size: .78rem; color: var(--muted); margin-top: 4px; }
+
+    /* Optimal section */
+    .optimal-card {
+      background: var(--card); border: 1px solid var(--gold);
+      border-radius: var(--radius); padding: 20px; margin-bottom: 22px;
+    }
+    .optimal-head {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 16px; color: var(--gold); font-weight: 700;
+    }
+    .optimal-head .opt-score {
+      margin-left: auto; font-size: .9rem; font-weight: 400; color: var(--muted);
+    }
+    .optimal-head .opt-score strong { color: var(--gold); font-size: 1.1rem; }
+
+    .cmp-header {
+      display: grid; grid-template-columns: 26px 70px 1fr 1fr 36px;
+      gap: 6px; font-size: .72rem; color: var(--muted);
+      padding-bottom: 8px; border-bottom: 1px solid var(--border); margin-bottom: 4px;
+    }
+    .cmp-row {
+      display: grid; grid-template-columns: 26px 70px 1fr 1fr 36px;
+      gap: 6px; align-items: center;
+      padding: 9px 0; border-bottom: 1px solid var(--border);
+      font-size: .82rem;
+    }
+    .cmp-row:last-child { border-bottom: none; }
+    .cmp-icon  { font-size: 1rem; }
+    .cmp-cat   { font-weight: 600; }
+    .cmp-yours { color: var(--text); }
+    .cmp-best  { color: var(--gold); }
+    .cmp-delta { text-align: right; font-weight: 700; font-size: .85rem; }
+    .delta-pos { color: var(--green); }
+    .delta-neg { color: var(--red); }
+    .delta-neu { color: var(--muted); }
+
+    /* Share section */
+    .share-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px; margin-bottom: 22px;
+    }
+    .share-title { font-weight: 700; margin-bottom: 6px; }
+    .share-desc  { font-size: .85rem; color: var(--muted); margin-bottom: 14px; }
+    .code-display {
+      font-family: monospace; font-size: 2rem; letter-spacing: 6px;
+      color: var(--accent); text-align: center;
+      background: var(--bg); border-radius: 10px; padding: 16px;
+      margin-bottom: 14px; border: 1px solid var(--border);
+      cursor: pointer; transition: border-color .15s;
+    }
+    .code-display:hover { border-color: var(--accent); }
+    .btn-row { display: flex; gap: 10px; }
+    .btn-row .btn { flex: 1; }
+    .copied-toast {
+      position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+      background: var(--green); color: #000;
+      padding: 10px 24px; border-radius: 30px; font-weight: 700; font-size: .9rem;
+      opacity: 0; pointer-events: none; transition: opacity .3s;
+    }
+    .copied-toast.show { opacity: 1; }
+
+    /* Section heading */
+    .sec-head {
+      display: flex; justify-content: space-between; align-items: baseline;
+      margin-bottom: 12px;
+    }
+    .sec-head h3 { font-size: 1rem; font-weight: 700; }
+    .sec-head span { font-size: .82rem; color: var(--muted); }
+
+    @media (max-width: 480px) {
+      .cat-grid { grid-template-columns: repeat(2, 1fr); }
+      .results-grid { grid-template-columns: 1fr; }
+      .cmp-header, .cmp-row { grid-template-columns: 22px 62px 1fr 1fr 30px; font-size: .72rem; }
+      .country-name { font-size: 1.45rem; }
+      .score-num { font-size: 3.5rem; }
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ════════════════════════════════════════════
+       WELCOME SCREEN
+  ════════════════════════════════════════════ -->
+  <div id="screen-welcome" class="screen active fadeUp">
+    <div class="welcome-hero">
+      <div class="globe">🌍</div>
+      <h1>Country Challenge</h1>
+      <p>Match each country to a category. Score as high as you can!</p>
+    </div>
+
+    <div class="card fadeUp" style="margin-bottom:18px;animation-delay:.08s">
+      <div style="font-weight:700;margin-bottom:12px;">How to Play</div>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-text">A random country flag is revealed. Assign it to one of 8 categories.</div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-text">Repeat for 8 countries — each category can only be used once.</div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-text">Each country is scored <strong>out of 10</strong> for how well it fits your chosen category.</div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-text">See your total vs. the <strong>optimal play</strong>, then share your game code to challenge friends!</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card fadeUp" style="animation-delay:.14s">
+      <button class="btn btn-primary" onclick="newGame()">🎲 New Game</button>
+      <div class="divider">or join with a game code</div>
+      <input type="text" id="codeInput" placeholder="Enter code (e.g. 47291)" maxlength="8"
+             onkeydown="if(event.key==='Enter') joinGame()" style="margin-bottom:12px;" />
+      <button class="btn btn-secondary" onclick="joinGame()">🔗 Play This Game</button>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════
+       GAME SCREEN
+  ════════════════════════════════════════════ -->
+  <div id="screen-game" class="screen">
+    <div class="top-bar">
+      <button class="top-back" onclick="goHome()">← Home</button>
+      <div class="game-code-tag">Code: <span id="gameCodeBadge"></span></div>
+    </div>
+
+    <div class="progress-row" id="progressRow"></div>
+
+    <div class="flag-card pop" id="flagCard">
+      <div class="round-label" id="roundLabel">Round 1 of 8</div>
+      <div class="flag-wrap"><img id="flagImg" src="" alt="Country flag" /></div>
+      <div class="country-name" id="countryName">—</div>
+    </div>
+
+    <p class="prompt-text">Which category does this country excel at?</p>
+
+    <div class="cat-grid" id="catGrid"></div>
+
+    <div class="sel-bar">
+      <div class="sel-bar-title">Assigned so far:</div>
+      <div class="sel-chips" id="selChips">
+        <span style="color:var(--muted);font-size:.78rem;">None yet</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════
+       RESULTS SCREEN  (injected by JS)
+  ════════════════════════════════════════════ -->
+  <div id="screen-results" class="screen"></div>
+
+</div><!-- #app -->
+
+<div class="copied-toast" id="toast">✓ Copied!</div>
+
+<script>
+/* ══════════════════════════════════════════════════════
+   COUNTRY DATA  (65 countries × 8 categories, score 1–10)
+   Categories: Economy, Military, Safety, Nature,
+               Weather, History, Culture, Food
+══════════════════════════════════════════════════════ */
+const COUNTRIES = [
+  { code:'us', name:'United States',   scores:{Economy:9,Military:10,Safety:6,Nature:9,Weather:7,History:8,Culture:9,Food:7} },
+  { code:'cn', name:'China',           scores:{Economy:8,Military:9,Safety:7,Nature:8,Weather:6,History:10,Culture:9,Food:9} },
+  { code:'jp', name:'Japan',           scores:{Economy:9,Military:7,Safety:9,Nature:7,Weather:6,History:9,Culture:10,Food:10} },
+  { code:'de', name:'Germany',         scores:{Economy:9,Military:7,Safety:8,Nature:7,Weather:5,History:9,Culture:8,Food:7} },
+  { code:'gb', name:'United Kingdom',  scores:{Economy:8,Military:8,Safety:7,Nature:7,Weather:5,History:10,Culture:9,Food:6} },
+  { code:'fr', name:'France',          scores:{Economy:9,Military:8,Safety:7,Nature:8,Weather:7,History:10,Culture:10,Food:10} },
+  { code:'it', name:'Italy',           scores:{Economy:7,Military:6,Safety:7,Nature:8,Weather:8,History:10,Culture:10,Food:10} },
+  { code:'es', name:'Spain',           scores:{Economy:7,Military:6,Safety:7,Nature:8,Weather:9,History:9,Culture:9,Food:9} },
+  { code:'br', name:'Brazil',          scores:{Economy:7,Military:7,Safety:4,Nature:10,Weather:8,History:7,Culture:9,Food:8} },
+  { code:'au', name:'Australia',       scores:{Economy:8,Military:7,Safety:8,Nature:10,Weather:7,History:7,Culture:8,Food:7} },
+  { code:'ca', name:'Canada',          scores:{Economy:8,Military:7,Safety:8,Nature:10,Weather:5,History:7,Culture:8,Food:7} },
+  { code:'ru', name:'Russia',          scores:{Economy:6,Military:10,Safety:5,Nature:10,Weather:4,History:9,Culture:8,Food:7} },
+  { code:'in', name:'India',           scores:{Economy:7,Military:8,Safety:5,Nature:8,Weather:7,History:10,Culture:9,Food:9} },
+  { code:'za', name:'South Africa',    scores:{Economy:6,Military:6,Safety:4,Nature:9,Weather:8,History:8,Culture:8,Food:7} },
+  { code:'mx', name:'Mexico',          scores:{Economy:6,Military:5,Safety:4,Nature:9,Weather:8,History:9,Culture:9,Food:10} },
+  { code:'ar', name:'Argentina',       scores:{Economy:5,Military:5,Safety:6,Nature:9,Weather:7,History:8,Culture:8,Food:9} },
+  { code:'eg', name:'Egypt',           scores:{Economy:5,Military:7,Safety:5,Nature:7,Weather:8,History:10,Culture:8,Food:8} },
+  { code:'gr', name:'Greece',          scores:{Economy:6,Military:6,Safety:7,Nature:8,Weather:9,History:10,Culture:9,Food:9} },
+  { code:'th', name:'Thailand',        scores:{Economy:6,Military:6,Safety:7,Nature:8,Weather:8,History:8,Culture:8,Food:10} },
+  { code:'ch', name:'Switzerland',     scores:{Economy:10,Military:5,Safety:10,Nature:9,Weather:6,History:8,Culture:8,Food:8} },
+  { code:'no', name:'Norway',          scores:{Economy:10,Military:6,Safety:9,Nature:10,Weather:5,History:8,Culture:8,Food:6} },
+  { code:'se', name:'Sweden',          scores:{Economy:9,Military:6,Safety:8,Nature:9,Weather:5,History:8,Culture:8,Food:7} },
+  { code:'nl', name:'Netherlands',     scores:{Economy:9,Military:7,Safety:8,Nature:6,Weather:6,History:9,Culture:8,Food:7} },
+  { code:'kr', name:'South Korea',     scores:{Economy:8,Military:8,Safety:8,Nature:7,Weather:6,History:9,Culture:9,Food:9} },
+  { code:'sa', name:'Saudi Arabia',    scores:{Economy:8,Military:8,Safety:6,Nature:5,Weather:5,History:8,Culture:7,Food:7} },
+  { code:'ng', name:'Nigeria',         scores:{Economy:5,Military:6,Safety:3,Nature:7,Weather:7,History:8,Culture:9,Food:8} },
+  { code:'tr', name:'Turkey',          scores:{Economy:6,Military:8,Safety:6,Nature:8,Weather:8,History:10,Culture:8,Food:9} },
+  { code:'id', name:'Indonesia',       scores:{Economy:6,Military:6,Safety:6,Nature:9,Weather:8,History:8,Culture:8,Food:9} },
+  { code:'pt', name:'Portugal',        scores:{Economy:7,Military:5,Safety:8,Nature:7,Weather:8,History:9,Culture:8,Food:8} },
+  { code:'nz', name:'New Zealand',     scores:{Economy:8,Military:5,Safety:9,Nature:10,Weather:7,History:7,Culture:8,Food:7} },
+  { code:'ma', name:'Morocco',         scores:{Economy:5,Military:5,Safety:6,Nature:7,Weather:8,History:9,Culture:8,Food:8} },
+  { code:'ke', name:'Kenya',           scores:{Economy:5,Military:5,Safety:5,Nature:9,Weather:7,History:7,Culture:7,Food:7} },
+  { code:'vn', name:'Vietnam',         scores:{Economy:6,Military:6,Safety:7,Nature:8,Weather:7,History:8,Culture:8,Food:9} },
+  { code:'pe', name:'Peru',            scores:{Economy:5,Military:5,Safety:5,Nature:9,Weather:7,History:9,Culture:8,Food:9} },
+  { code:'co', name:'Colombia',        scores:{Economy:6,Military:5,Safety:5,Nature:9,Weather:8,History:8,Culture:8,Food:8} },
+  { code:'cl', name:'Chile',           scores:{Economy:7,Military:5,Safety:7,Nature:9,Weather:7,History:8,Culture:7,Food:8} },
+  { code:'cu', name:'Cuba',            scores:{Economy:4,Military:5,Safety:7,Nature:8,Weather:9,History:8,Culture:9,Food:7} },
+  { code:'is', name:'Iceland',         scores:{Economy:9,Military:3,Safety:10,Nature:10,Weather:4,History:7,Culture:7,Food:6} },
+  { code:'sg', name:'Singapore',       scores:{Economy:10,Military:7,Safety:9,Nature:5,Weather:7,History:7,Culture:8,Food:9} },
+  { code:'ua', name:'Ukraine',         scores:{Economy:5,Military:7,Safety:4,Nature:8,Weather:6,History:9,Culture:8,Food:8} },
+  { code:'pl', name:'Poland',          scores:{Economy:7,Military:7,Safety:7,Nature:7,Weather:6,History:8,Culture:8,Food:8} },
+  { code:'cz', name:'Czech Republic',  scores:{Economy:8,Military:6,Safety:8,Nature:7,Weather:6,History:9,Culture:8,Food:8} },
+  { code:'hu', name:'Hungary',         scores:{Economy:7,Military:6,Safety:7,Nature:7,Weather:6,History:8,Culture:8,Food:8} },
+  { code:'at', name:'Austria',         scores:{Economy:9,Military:5,Safety:9,Nature:8,Weather:6,History:9,Culture:9,Food:8} },
+  { code:'dk', name:'Denmark',         scores:{Economy:9,Military:6,Safety:9,Nature:7,Weather:5,History:8,Culture:8,Food:7} },
+  { code:'fi', name:'Finland',         scores:{Economy:9,Military:6,Safety:9,Nature:9,Weather:4,History:7,Culture:7,Food:6} },
+  { code:'il', name:'Israel',          scores:{Economy:8,Military:9,Safety:6,Nature:6,Weather:7,History:10,Culture:8,Food:8} },
+  { code:'pk', name:'Pakistan',        scores:{Economy:4,Military:7,Safety:4,Nature:7,Weather:6,History:9,Culture:7,Food:8} },
+  { code:'np', name:'Nepal',           scores:{Economy:3,Military:4,Safety:6,Nature:10,Weather:6,History:8,Culture:7,Food:7} },
+  { code:'lk', name:'Sri Lanka',       scores:{Economy:5,Military:4,Safety:7,Nature:8,Weather:8,History:9,Culture:8,Food:9} },
+  { code:'ph', name:'Philippines',     scores:{Economy:5,Military:5,Safety:5,Nature:8,Weather:7,History:8,Culture:8,Food:8} },
+  { code:'my', name:'Malaysia',        scores:{Economy:7,Military:6,Safety:7,Nature:8,Weather:8,History:7,Culture:8,Food:9} },
+  { code:'ae', name:'UAE',             scores:{Economy:9,Military:8,Safety:8,Nature:4,Weather:6,History:7,Culture:7,Food:8} },
+  { code:'qa', name:'Qatar',           scores:{Economy:9,Military:7,Safety:8,Nature:3,Weather:5,History:6,Culture:7,Food:8} },
+  { code:'gh', name:'Ghana',           scores:{Economy:5,Military:4,Safety:6,Nature:7,Weather:7,History:7,Culture:8,Food:8} },
+  { code:'et', name:'Ethiopia',        scores:{Economy:3,Military:5,Safety:4,Nature:8,Weather:6,History:9,Culture:7,Food:7} },
+  { code:'ro', name:'Romania',         scores:{Economy:7,Military:6,Safety:7,Nature:8,Weather:6,History:8,Culture:8,Food:8} },
+  { code:'hr', name:'Croatia',         scores:{Economy:7,Military:5,Safety:8,Nature:8,Weather:9,History:8,Culture:8,Food:8} },
+  { code:'be', name:'Belgium',         scores:{Economy:9,Military:6,Safety:7,Nature:6,Weather:5,History:9,Culture:8,Food:9} },
+  { code:'ie', name:'Ireland',         scores:{Economy:9,Military:4,Safety:8,Nature:8,Weather:6,History:9,Culture:9,Food:7} },
+  { code:'ir', name:'Iran',            scores:{Economy:5,Military:8,Safety:5,Nature:7,Weather:7,History:10,Culture:9,Food:8} },
+  { code:'jo', name:'Jordan',          scores:{Economy:5,Military:6,Safety:7,Nature:6,Weather:7,History:9,Culture:7,Food:8} },
+  { code:'kh', name:'Cambodia',        scores:{Economy:4,Military:4,Safety:6,Nature:8,Weather:7,History:9,Culture:7,Food:8} },
+  { code:'mm', name:'Myanmar',         scores:{Economy:4,Military:5,Safety:4,Nature:8,Weather:7,History:8,Culture:7,Food:7} },
+  { code:'bg', name:'Bulgaria',        scores:{Economy:6,Military:5,Safety:7,Nature:7,Weather:7,History:8,Culture:7,Food:7} },
+  { code:'kw', name:'Kuwait',          scores:{Economy:8,Military:6,Safety:7,Nature:3,Weather:5,History:7,Culture:6,Food:7} },
+];
+
+const CATS = ['Economy','Military','Safety','Nature','Weather','History','Culture','Food'];
+
+const CAT_META = {
+  Economy:  { icon:'💰', sub:'GDP & wealth' },
+  Military: { icon:'⚔️', sub:'Defense power' },
+  Safety:   { icon:'🛡️', sub:'Peace & security' },
+  Nature:   { icon:'🌿', sub:'Landscapes & wildlife' },
+  Weather:  { icon:'☀️', sub:'Climate & sunshine' },
+  History:  { icon:'📜', sub:'Historical legacy' },
+  Culture:  { icon:'🎭', sub:'Arts & traditions' },
+  Food:     { icon:'🍽️', sub:'Cuisine & flavors' },
+};
+
+/* ══════════════════════════════════════════════════════
+   SEEDED RNG  (mulberry32)
+══════════════════════════════════════════════════════ */
+function makeRng(seed) {
+  let s = seed >>> 0;
+  return () => {
+    s = (s + 0x6D2B79F5) >>> 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function seededShuffle(arr, rng) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/* ══════════════════════════════════════════════════════
+   OPTIMAL SOLVER  (brute-force, 8! = 40 320 ops)
+══════════════════════════════════════════════════════ */
+function findOptimal(countries) {
+  let best = -1, bestAssign = null;
+  const cats = [...CATS];
+  function perm(remaining, chosen) {
+    if (!remaining.length) {
+      const s = chosen.reduce((sum, c, i) => sum + countries[i].scores[c], 0);
+      if (s > best) { best = s; bestAssign = [...chosen]; }
+      return;
+    }
+    for (let i = 0; i < remaining.length; i++) {
+      const rest = remaining.filter((_, k) => k !== i);
+      perm(rest, [...chosen, remaining[i]]);
+    }
+  }
+  perm(cats, []);
+  return { score: best, assignment: bestAssign };
+}
+
+/* ══════════════════════════════════════════════════════
+   GAME STATE
+══════════════════════════════════════════════════════ */
+let G = {};
+
+function newGame() {
+  const seed = Math.floor(Math.random() * 90000) + 10000;
+  startGame(seed);
+}
+
+function joinGame() {
+  const raw = document.getElementById('codeInput').value.trim();
+  const seed = parseInt(raw, 10);
+  if (isNaN(seed) || seed < 1) {
+    document.getElementById('codeInput').style.borderColor = 'var(--red)';
+    setTimeout(() => document.getElementById('codeInput').style.borderColor = '', 1200);
+    return;
+  }
+  startGame(seed);
+}
+
+function startGame(seed) {
+  const rng = makeRng(seed);
+  const shuffled = seededShuffle(COUNTRIES, rng);
+  G = {
+    seed,
+    countries: shuffled.slice(0, 8),
+    round: 0,
+    selections: [],       // [{country, category}]
+    takenCats: new Set(),
+  };
+  history.replaceState(null, '', `#game=${seed}`);
+  showScreen('game');
+  renderRound();
+}
+
+function pickCategory(cat) {
+  if (G.takenCats.has(cat)) return;
+  const country = G.countries[G.round];
+  G.selections.push({ country, category: cat });
+  G.takenCats.add(cat);
+  G.round++;
+  if (G.round === 8) buildResults();
+  else renderRound();
+}
+
+function goHome() {
+  history.replaceState(null, '', window.location.pathname);
+  showScreen('welcome');
+}
+
+/* ══════════════════════════════════════════════════════
+   RENDER HELPERS
+══════════════════════════════════════════════════════ */
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+}
+
+function renderRound() {
+  const c = G.countries[G.round];
+
+  // top bar
+  document.getElementById('gameCodeBadge').textContent = G.seed;
+
+  // progress dots
+  document.getElementById('progressRow').innerHTML =
+    Array.from({length:8}, (_,i) => {
+      const cls = i < G.round ? 'done' : i === G.round ? 'current' : '';
+      return `<div class="pdot ${cls}"></div>`;
+    }).join('');
+
+  // flag card — re-animate
+  const fc = document.getElementById('flagCard');
+  fc.classList.remove('pop');
+  void fc.offsetWidth;
+  fc.classList.add('pop');
+
+  document.getElementById('roundLabel').textContent = `Round ${G.round + 1} of 8`;
+  document.getElementById('flagImg').src = `https://flagcdn.com/w320/${c.code}.png`;
+  document.getElementById('flagImg').alt = `${c.name} flag`;
+  document.getElementById('countryName').textContent = c.name;
+
+  // category buttons
+  document.getElementById('catGrid').innerHTML = CATS.map(cat => {
+    const m = CAT_META[cat];
+    const taken = G.takenCats.has(cat);
+    return `<button class="cat-btn${taken?' taken':''}"
+                    onclick="pickCategory('${cat}')"
+                    ${taken?'disabled':''}>
+      <div class="cat-icon">${m.icon}</div>
+      <div class="cat-label">${cat}</div>
+      <div class="cat-sub">${m.sub}</div>
+    </button>`;
+  }).join('');
+
+  // selections so far
+  const chips = document.getElementById('selChips');
+  if (!G.selections.length) {
+    chips.innerHTML = '<span style="color:var(--muted);font-size:.78rem;">None yet</span>';
+  } else {
+    chips.innerHTML = G.selections.map(s =>
+      `<span class="sel-chip">${CAT_META[s.category].icon} ${s.category}: ${s.country.name}</span>`
+    ).join('');
+  }
+}
+
+/* ══════════════════════════════════════════════════════
+   RESULTS
+══════════════════════════════════════════════════════ */
+function buildResults() {
+  const optimal = findOptimal(G.countries);
+  const yourScore = G.selections.reduce((s, sel) => s + sel.country.scores[sel.category], 0);
+
+  // build maps
+  const yourMap = {};   // category → {country, score}
+  G.selections.forEach(sel => {
+    yourMap[sel.category] = { country: sel.country, score: sel.country.scores[sel.category] };
+  });
+  const optMap = {};    // category → {country, score}
+  optimal.assignment.forEach((cat, i) => {
+    optMap[cat] = { country: G.countries[i], score: G.countries[i].scores[cat] };
+  });
+
+  // grade
+  const pct = yourScore / 80;
+  const grade =
+    pct >= .9  ? 'S' :
+    pct >= .8  ? 'A' :
+    pct >= .675? 'B' :
+    pct >= .55 ? 'C' : 'D';
+
+  const comments = {
+    S: "Flawless! You played almost perfectly 🏅",
+    A: "Excellent — you know your world geography! 🌟",
+    B: "Great job — solid strategic picks 👏",
+    C: "Not bad! A bit more thought on a few picks 🤔",
+    D: "Rough round — try again and beat your score! 💪",
+  };
+
+  // score bar colours
+  function barColor(s) {
+    return s >= 8 ? 'var(--green)' : s >= 6 ? 'var(--accent)' : s >= 4 ? 'var(--gold)' : 'var(--red)';
+  }
+
+  // comparison rows
+  const cmpRows = CATS.map(cat => {
+    const y = yourMap[cat];
+    const o = optMap[cat];
+    const delta = y.score - o.score;
+    const deltaStr = delta > 0 ? `+${delta}` : delta < 0 ? `${delta}` : '=';
+    const deltaClass = delta > 0 ? 'delta-pos' : delta < 0 ? 'delta-neg' : 'delta-neu';
+    const m = CAT_META[cat];
+    return `<div class="cmp-row">
+      <div class="cmp-icon">${m.icon}</div>
+      <div class="cmp-cat">${cat}</div>
+      <div class="cmp-yours">${y.country.name} <span style="color:var(--muted)">(${y.score})</span></div>
+      <div class="cmp-best">${o.country.name} <span style="color:var(--gold)">(${o.score})</span></div>
+      <div class="cmp-delta ${deltaClass}">${deltaStr}</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('screen-results').innerHTML = `
+    <div class="top-bar fadeUp">
+      <button class="top-back" onclick="goHome()">← Home</button>
+      <div class="game-code-tag">Code: <span>${G.seed}</span></div>
+    </div>
+
+    <!-- SCORE HERO -->
+    <div class="score-hero fadeUp" style="animation-delay:.05s">
+      <div class="label">Your Total Score</div>
+      <div class="score-display">
+        <div class="score-num">${yourScore}</div>
+        <div class="grade-badge grade-${grade}">${grade}</div>
+      </div>
+      <div class="max">out of 80</div>
+      <div class="total-bar-bg">
+        <div class="total-bar-fill" style="width:${(yourScore/80)*100}%"></div>
+      </div>
+      <div class="score-comment">${comments[grade]}</div>
+    </div>
+
+    <!-- YOUR SELECTIONS -->
+    <div class="fadeUp" style="animation-delay:.1s;margin-bottom:22px;">
+      <div class="sec-head"><h3>Your Selections</h3><span>${yourScore}/80</span></div>
+      <div class="results-grid">
+        ${CATS.map(cat => {
+          const y = yourMap[cat];
+          const m = CAT_META[cat];
+          return `<div class="res-card">
+            <div class="res-head"><span class="res-icon">${m.icon}</span><span class="res-title">${cat}</span></div>
+            <div class="res-country">🏳️ ${y.country.name}</div>
+            <div class="bar-bg"><div class="bar-fill" style="width:${y.score*10}%;background:${barColor(y.score)}"></div></div>
+            <div class="res-score">${y.score} / 10</div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+
+    <!-- OPTIMAL COMPARISON -->
+    <div class="optimal-card fadeUp" style="animation-delay:.15s">
+      <div class="optimal-head">
+        🏆 Optimal Play
+        <div class="opt-score">Best possible: <strong>${optimal.score}/80</strong></div>
+      </div>
+      <div class="cmp-header">
+        <div></div><div>Category</div><div>Your Pick</div><div>Best Pick</div><div style="text-align:right">Δ</div>
+      </div>
+      ${cmpRows}
+    </div>
+
+    <!-- SHARE -->
+    <div class="share-card fadeUp" style="animation-delay:.2s">
+      <div class="share-title">🔗 Challenge Friends</div>
+      <div class="share-desc">Share your game code — friends play the same 8 countries and you compare scores!</div>
+      <div class="code-display" onclick="copyCode(this)">${G.seed}</div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="copyCode()">📋 Copy Code</button>
+        <button class="btn btn-secondary" onclick="newGame()">🎲 New Game</button>
+      </div>
+    </div>
+  `;
+
+  showScreen('results');
+}
+
+/* ══════════════════════════════════════════════════════
+   COPY + TOAST
+══════════════════════════════════════════════════════ */
+function copyCode() {
+  const code = String(G.seed);
+  navigator.clipboard.writeText(code).catch(() => {});
+  const t = document.getElementById('toast');
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+/* ══════════════════════════════════════════════════════
+   INIT — check URL hash for game code
+══════════════════════════════════════════════════════ */
+(function init() {
+  const m = window.location.hash.match(/^#game=(\d+)$/);
+  if (m) {
+    const seed = parseInt(m[1], 10);
+    document.getElementById('codeInput').value = seed;
+    startGame(seed);
+  }
+})();
+</script>
+</body>
+</html>
